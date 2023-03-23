@@ -1,0 +1,126 @@
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	_ "github.com/go-sql-driver/mysql"
+)
+
+type user struct {
+	id   int
+	age  int
+	name string
+}
+
+var db *sql.DB
+
+func initDB() (err error) {
+	// DSN: Data Source Name
+	dsn := "root:rootroot@tcp(127.0.0.1:3306)/sql_demo"
+	db, err = sql.Open("mysql", dsn)
+	if err != nil {
+		return err
+	}
+	// 尝试与Mysql建立链接，校验dsn是否正确；
+	err = db.Ping()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// 增
+func insertRowData() {
+	sqlStr := "insert into user(name, age) values (?,?)"
+	ret, err := db.Exec(sqlStr, "小红", 18)
+	if err != nil {
+		fmt.Printf("insert faild, err:%v\n", err)
+		return
+	}
+	theID, err := ret.LastInsertId() // 插入新数据的id
+	if err != nil {
+		fmt.Printf("get lastInsertID failed, err:%v\n", err)
+		return
+	}
+	fmt.Printf("insert success, the id is %d. \n", theID)
+}
+
+// 删
+func deleteRowData() {
+	sqlStr := "delete from user where id = ?"
+	ret, err := db.Exec(sqlStr, 2)
+	if err != nil {
+		fmt.Printf("delete failed, err:%v\n", err)
+		return
+	}
+	n, err := ret.RowsAffected()
+	if err != nil {
+		fmt.Printf("get RowsAffected failed, err:%v\n", err)
+		return
+	}
+	fmt.Printf("delete success, affected rows:%d\n", n)
+}
+
+// 改
+func updateRowData() {
+	sqlStr := "update user set age=? where id=?"
+	ret, err := db.Exec(sqlStr, 99, 2)
+	if err != nil {
+		fmt.Printf("updata failed, err:%v\n", err)
+		return
+	}
+	n, err := ret.RowsAffected()
+	if err != nil {
+		fmt.Printf("get RowsAffected failed, err:%v\n", err)
+		return
+	}
+	fmt.Printf("updata success, affected rows:%d\n", n)
+}
+
+// 查
+func queryRowData() {
+	sqlStr := "select id, name, age from user where id=?"
+	var u user
+	// 非常重要：确保QueryRow之后调用Scan方法，否则持有的数据库链接不会被释放
+	err := db.QueryRow(sqlStr, 1).Scan(&u.id, &u.name, &u.age)
+	if err != nil {
+		fmt.Printf("scan failed, err:%v\n", err)
+		return
+	}
+	fmt.Printf("id:%d name:%s age:%d \n", u.id, u.name, u.age)
+}
+func queryRowDatas() {
+	sqlStr := "select id, name, age from user where id>?"
+	rows, err := db.Query(sqlStr, 0)
+	if err != nil {
+		fmt.Printf("query failed, err:%v\n", err)
+		return
+	}
+	// 非常重要：关闭rows释放持有的数据库链接 // scan()中有defer close 但下面循环有可能在scan之前有panic发生；
+	defer rows.Close()
+
+	for rows.Next() {
+		var u user
+		err := rows.Scan(&u.id, &u.name, &u.age)
+		if err != nil {
+			fmt.Printf("scan failed, err:%v\n", err)
+			return
+		}
+		fmt.Printf("id:%d name:%s age:%d \n", u.id, u.name, u.age)
+	}
+}
+
+func main() {
+	err := initDB()
+	if err != nil {
+		fmt.Printf("init db failed,err:%v\n", err)
+		return
+	}
+	defer db.Close()
+	fmt.Println("Sql link successfully!")
+	// insertRowData()
+	// queryRowData()
+	// queryRowDatas()
+	// updateRowData()
+	deleteRowData()
+}
