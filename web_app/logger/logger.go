@@ -2,7 +2,6 @@ package logger
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
@@ -13,22 +12,23 @@ import (
 	"runtime/debug"
 	"strings"
 	"time"
+	"web_app/settings"
 )
 
 // var lg *zap.Logger // 不需要全局lg的原因是：zap.ReplaceGlobals(lg)替换zap全局的logger实例；
 // 在其他地方直接zap.L()就可以访问logger了；
 
 // Init Logger use zap
-func Init() (err error) {
+func Init(cfg *settings.LogConfig) (err error) {
 	writerSyncer := getLogWriter(
-		viper.GetString("log.filename"),
-		viper.GetInt("log.max_size"),
-		viper.GetInt("log.max_age"),
-		viper.GetInt("log.max_backups"),
+		cfg.Filename,
+		cfg.MaxSize,
+		cfg.MaxBackups,
+		cfg.MaxAge,
 	)
 	encoder := getEncoder()
 	var l = new(zapcore.Level)
-	err = l.UnmarshalText([]byte(viper.GetString("log.level")))
+	err = l.UnmarshalText([]byte(cfg.Level))
 	if err != nil {
 		return
 	}
