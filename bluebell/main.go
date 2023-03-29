@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bluebell/controllers"
 	"bluebell/dao/mysql"
 	"bluebell/dao/redis"
 	"bluebell/logger"
@@ -27,7 +28,7 @@ func main() {
 	}
 
 	// 2. 初始化日志；
-	if err := logger.Init(settings.Conf.LogConfig); err != nil {
+	if err := logger.Init(settings.Conf.LogConfig, settings.Conf.Mode); err != nil {
 		fmt.Printf("logger.Init() failed, err:%v\n", err)
 		return
 	}
@@ -48,8 +49,14 @@ func main() {
 	}
 	defer redis.Close()
 
+	// 初始化gin框架内置的校验器使用的翻译器；
+	if err := controllers.InitTrans("zh"); err != nil {
+		fmt.Printf("controllers.InitTrans() failed, err:%v\n", err)
+		return
+	}
+
 	// 5. 注册路由；单独建一个模块routes来完成；
-	r := routes.Setup()
+	r := routes.SetupRouter(settings.Conf.Mode)
 
 	// 6. 启动服务（优雅关机）；
 	srv := &http.Server{

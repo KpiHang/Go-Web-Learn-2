@@ -65,7 +65,7 @@ func Init() (err error) {
 	}
 
 	// 查看配置情况；
-	fmt.Printf("%#v\n, %#v\n", Conf, viper.GetInt("app.port"))
+	// fmt.Printf("%#v\n, %#v\n", Conf, viper.GetInt("app.port"))
 
 	viper.WatchConfig() // 注册监听配置变化的事件；支持热更新；
 	viper.OnConfigChange(func(e fsnotify.Event) {

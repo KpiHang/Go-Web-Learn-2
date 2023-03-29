@@ -19,7 +19,7 @@ import (
 // 在其他地方直接zap.L()就可以访问logger了；
 
 // Init Logger use zap
-func Init(cfg *settings.LogConfig) (err error) {
+func Init(cfg *settings.LogConfig, mode string) (err error) {
 	writerSyncer := getLogWriter(
 		cfg.Filename,
 		cfg.MaxSize,
@@ -32,7 +32,17 @@ func Init(cfg *settings.LogConfig) (err error) {
 	if err != nil {
 		return
 	}
-	core := zapcore.NewCore(encoder, writerSyncer, l)
+	var core zapcore.Core
+	if mode == "dev" {
+		// 进入开发模式，可以让日志从终端输出；
+		consoleEncoder := zapcore.NewConsoleEncoder(zap.NewProductionEncoderConfig())
+		core = zapcore.NewTee(
+			zapcore.NewCore(encoder, writerSyncer, l),
+			zapcore.NewCore(consoleEncoder, zapcore.Lock(os.Stdout), zapcore.DebugLevel),
+		)
+	} else {
+		core = zapcore.NewCore(encoder, writerSyncer, l)
+	}
 
 	lg := zap.New(core, zap.AddCaller())
 	zap.ReplaceGlobals(lg) // 替换zap全局的logger实例；
